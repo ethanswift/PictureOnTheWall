@@ -15,6 +15,8 @@ class ImageViewController: UIViewController, UINavigationControllerDelegate, UII
     
     @IBOutlet weak var cameraButton: UIBarButtonItem!
     
+    var croppedImage = CIImage()
+    
     var imagePicker = UIImagePickerController()
 
     override func viewDidLoad() {
@@ -39,7 +41,7 @@ class ImageViewController: UIViewController, UINavigationControllerDelegate, UII
         let image = info[UIImagePickerController.InfoKey.originalImage] as! UIImage
         imageView.image = image
         if let imageCI = CIImage(image: image) {
-            
+            detectFace(image: imageCI)
         }
     }
     
@@ -47,8 +49,16 @@ class ImageViewController: UIViewController, UINavigationControllerDelegate, UII
         let requestHandler = VNImageRequestHandler(ciImage: image, options: [:])
         let request = VNDetectFaceRectanglesRequest { (request, error) in
             let results = request.results as! [VNFaceObservation]
-            results.first?.boundingBox
-            
+            if let rec = results.first?.boundingBox {
+                if let croppedImage = image.cgImage?.cropping(to: rec) {
+                    self.imageView.image = UIImage(cgImage: croppedImage)
+                }
+            }
+        }
+        do {
+           try requestHandler.perform([request])
+        } catch {
+            fatalError("Hasn't been able to perform request handler")
         }
     }
     
